@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { userService } from '@/services/userService'
 
 type User = {
   id: string
@@ -8,6 +9,12 @@ type User = {
   name: string | null
   avatar: string | null
   role: string
+  plan?: string
+  preferences?: {
+    theme: string
+    currency: string
+    timezone: string
+  }
 }
 
 type AuthContextType = {
@@ -24,12 +31,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch('/api/auth/me')
-      if (response.ok) {
-        const data = await response.json()
-        setUser(data.user)
-      } else {
+      const { auth } = require('@/lib/firebase')
+      const currentUser = auth.currentUser
+      if (!currentUser) {
         setUser(null)
+        return
+      }
+
+      const profile = await userService.getUserProfile(currentUser.uid)
+      
+      if (profile) {
+        setUser({
+          id: profile.uid,
+          email: profile.email || '',
+          name: profile.name,
+          avatar: profile.photoURL,
+          role: profile.role || 'user',
+          plan: profile.plan || 'Free',
+          preferences: profile.preferences,
+        })
+      } else {
+        // Fallback if profile doesn't exist yet but user is authenticated
+        setUser({
+          id: currentUser.uid,
+          email: currentUser.email || '',
+          name: currentUser.displayName,
+          avatar: currentUser.photoURL,
+          role: 'user',
+        })
       }
     } catch (error) {
       console.error('Failed to fetch user', error)
@@ -40,7 +69,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    fetchUser()
+    // Listen for Firebase token changes (including auto-refreshes)
+    const { onIdTokenChanged } = require('firebase/auth')
+    const { auth } = require('@/lib/firebase')
+    
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser: any) => {
+      if (firebaseUser) {
+        // Token might have refreshed, update server session
+        const idToken = await firebaseUser.getIdToken()
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken })
+        })
+        // Refresh local user state
+        fetchUser()
+      } else {
+        // User logged out
+        await fetch('/api/auth/session', { method: 'DELETE' })
+        setUser(null)
+        setLoading(false)
+      }
+    })
+
+    return () => unsubscribe()
   }, [])
 
   return (

@@ -89,9 +89,35 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden max-w-full;
   }
   html {
-    @apply font-sans;
+    @apply font-sans overflow-x-hidden max-w-full;
   }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 13, 28, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(173, 198, 255, 0.15);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(173, 198, 255, 0.35);
+}
+
+/* Firefox scrollbar compatibility */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(173, 198, 255, 0.15) rgba(10, 13, 28, 0.3);
 }

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { BrainCircuit, Eye, EyeOff } from 'lucide-react'
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { userService } from '@/services/userService'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,6 +33,9 @@ export default function SignupPage() {
       
       // Update profile with name
       await updateProfile(userCredential.user, { displayName: name })
+      
+      // Create user profile in Firestore
+      await userService.createUserProfile(userCredential.user, { name })
       
       const idToken = await userCredential.user.getIdToken()
       
@@ -69,6 +73,10 @@ export default function SignupPage() {
     try {
       const provider = new GoogleAuthProvider()
       const userCredential = await signInWithPopup(auth, provider)
+      
+      // Create user profile in Firestore
+      await userService.createUserProfile(userCredential.user)
+      
       const idToken = await userCredential.user.getIdToken()
       
       const res = await fetch('/api/auth/session', {

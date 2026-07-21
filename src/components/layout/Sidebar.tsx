@@ -25,11 +25,15 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavItemClick?: () => void
+}
+
+export function Sidebar({ onNavItemClick }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full w-64 flex-col overflow-y-auto bg-sidebar border-r border-sidebar-border px-4 py-6">
+    <div className="flex h-full w-full flex-col overflow-y-auto bg-sidebar border-r border-sidebar-border px-4 py-6 lg:border-r-0">
       <div className="flex items-center mb-8 px-2">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center mr-3 shadow-[0_0_15px_rgba(173,198,255,0.4)]">
           <BrainCircuit className="h-5 w-5 text-primary-foreground" />
@@ -44,6 +48,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onNavItemClick}
               className={cn(
                 'group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive 

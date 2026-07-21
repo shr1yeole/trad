@@ -15,35 +15,16 @@ export async function POST(request: Request) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
     
-    // Attempt to create user document if it doesn't exist.
-    // If adminDb fails (e.g., missing Service Account), catch and proceed so login works.
-    try {
-      const userRef = adminDb.collection('users').doc(uid);
-      const userSnap = await userRef.get();
-      
-      if (!userSnap.exists) {
-        await userRef.set({
-          email: decodedToken.email,
-          name: name || decodedToken.name || '',
-          avatar: decodedToken.picture || null,
-          role: 'user',
-          settings: {
-            theme: 'system',
-            notifications: true,
-            currency: 'USD',
-          },
-          createdAt: new Date().toISOString(),
-        });
-      }
-    } catch (dbError) {
-      console.warn('Could not sync user to Firestore (missing Service Account?):', dbError);
-    }
+    // User profile creation is now handled by the client SDK during signup/login
+    // to avoid needing the Firebase Admin SDK service account key.
 
     // Since we might not have a Service Account, we can't use createSessionCookie.
-    // Instead, store the raw ID token in the cookie (expires in 1 hour).
+    // Instead, store the raw ID token in the cookie.
+    // We set maxAge to 5 days so the browser keeps it, and our client-side AuthContext
+    // will continuously refresh this cookie with a fresh ID token in the background.
     const cookieStore = await cookies();
     cookieStore.set('session', idToken, {
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 60 * 60 * 24 * 5, // 5 days
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
